@@ -14,6 +14,8 @@ import com.facebook.GraphResponse;
 import com.facebook.WebDialog;
 import com.facebook.login.LoginManager;
 import com.facebook.login.LoginResult;
+import android.util.Log;
+
 import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.auth.ErrorCodes;
 import com.firebase.ui.auth.FirebaseUiException;
@@ -43,6 +45,8 @@ public class FacebookSignInHandler extends SingleProviderSignInHandler<AuthUI.Id
     private static final String EMAIL = "email";
     private static final String PUBLIC_PROFILE = "public_profile";
 
+    private static final String TAG = "FUI-FacebookHandler";
+
     private List<String> mPermissions;
 
     private final FacebookCallback<LoginResult> mCallback = new Callback();
@@ -53,13 +57,18 @@ public class FacebookSignInHandler extends SingleProviderSignInHandler<AuthUI.Id
     }
 
     private static IdpResponse createIdpResponse(
-            LoginResult result, @Nullable String email, String name, Uri photoUri) {
+            LoginResult result,
+            @Nullable String email,
+            String name,
+            Uri photoUri,
+            @Nullable String facebookId) {
         return new IdpResponse.Builder(
                 new User.Builder(FacebookAuthProvider.PROVIDER_ID, email)
                         .setName(name)
                         .setPhotoUri(photoUri)
                         .build())
                 .setToken(result.getAccessToken().getToken())
+                .setSecret(facebookId)
                 .build();
     }
 
@@ -148,6 +157,7 @@ public class FacebookSignInHandler extends SingleProviderSignInHandler<AuthUI.Id
             String email = null;
             String name = null;
             Uri photoUri = null;
+            String facebookId = null;
 
             try {
                 email = object.getString("email");
@@ -160,8 +170,12 @@ public class FacebookSignInHandler extends SingleProviderSignInHandler<AuthUI.Id
                         .getJSONObject("data")
                         .getString("url"));
             } catch (JSONException ignored) {}
+            try {
+                facebookId = object.getString("id");
+            } catch (JSONException ignored) {}
 
-            setResult(Resource.forSuccess(createIdpResponse(mResult, email, name, photoUri)));
+
+            setResult(Resource.forSuccess(createIdpResponse(mResult, email, name, photoUri, facebookId)));
         }
     }
 }

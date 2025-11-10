@@ -4,7 +4,9 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Intent;
 import android.text.TextUtils;
+import android.util.Log;
 
+import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.auth.ErrorCodes;
 import com.firebase.ui.auth.FirebaseUiException;
 import com.firebase.ui.auth.IdpResponse;
@@ -25,11 +27,14 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.EmailAuthProvider;
+import com.google.firebase.auth.FacebookAuthProvider;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
+import com.google.firebase.auth.OAuthCredential;
 import com.google.firebase.auth.PhoneAuthProvider;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import androidx.annotation.NonNull;
@@ -40,6 +45,8 @@ import static com.firebase.ui.auth.AuthUI.EMAIL_LINK_PROVIDER;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 public class SocialProviderResponseHandler extends SignInViewModelBase {
+    private static final String TAG = "FUI-SocialProvider";
+
     public SocialProviderResponseHandler(Application application) {
         super(application);
     }
@@ -73,6 +80,7 @@ public class SocialProviderResponseHandler extends SignInViewModelBase {
                 .continueWithTask(new ProfileMerger(response))
                 .addOnSuccessListener(result -> handleSuccess(response, result))
                 .addOnFailureListener(e -> {
+                    Log.e(TAG, "signInAndLinkWithCredential failed", e);
                     // For some reason disabled users can hit FirebaseAuthUserCollisionException
                     // so we have to handle this special case.
                     boolean isDisabledUser = (e instanceof FirebaseAuthInvalidUserException);
@@ -89,6 +97,28 @@ public class SocialProviderResponseHandler extends SignInViewModelBase {
                                 new FirebaseUiException(ErrorCodes.ERROR_USER_DISABLED)
                         ));
                     } else if (e instanceof FirebaseAuthUserCollisionException) {
+                        User user = response.getUser();
+                        String collisionEmail = ((FirebaseAuthUserCollisionException) e)
+                                .getEmail();
+                        String providerId = response.getProviderType();
+                        String signInMethod = null;
+                        String facebookUid = null;
+                        if (providerId != null && providerId.equals(FacebookAuthProvider.PROVIDER_ID)) {
+                            AuthCredential credentialForLink = response.getCredentialForLinking();
+                            if (credentialForLink instanceof OAuthCredential) {
+                                OAuthCredential oAuthCredential = (OAuthCredential) credentialForLink;
+                                signInMethod = oAuthCredential.getSignInMethod();
+                            }
+                            facebookUid = response.getIdpSecret();
+                        }
+                        Log.d(TAG, "Collision detected. provider="
+                                + providerId
+                                + " email=" + response.getEmail()
+                                + " collisionEmail=" + collisionEmail
+                                + " name=" + (user != null ? user.getName() : null)
+                                + " pendingSignInMethod=" + signInMethod
+                                + " providerUid=" + facebookUid);
+
                         final String email = response.getEmail();
                         if (email == null) {
                             setResult(Resource.forFailure(e));
@@ -106,14 +136,54 @@ public class SocialProviderResponseHandler extends SignInViewModelBase {
                         // same account before handling invoking a merge failure.
                         ProviderUtils.fetchSortedProviders(getAuth(), getArguments(), email)
                                 .addOnSuccessListener(providers -> {
+                                    Log.d(TAG, "fetchSortedProviders success. email=" + email
+                                            + " allowed=" + getAllowedProviderIds()
+                                            + " resolved=" + providers);
+                                    List<String> allowedProviders = getAllowedProviderIds();
                                     if (providers.contains(response.getProviderType())) {
                                         // Case 1
                                         handleMergeFailure(credential);
                                     } else if (providers.isEmpty()) {
-                                        setResult(Resource.forFailure(
-                                                new FirebaseUiException(
-                                                        ErrorCodes.DEVELOPER_ERROR,
-                                                        "No supported providers.")));
+                                        // When the email returned from the IdP (e.g., Facebook) isn't on any Firebase account
+                                        // but the credential is already linked to a provider-only account (no email),
+                                        // a link attempt from the current user will always collide. In this case, we should
+                                        // sign in directly with the IdP credential (not link), replacing any anonymous session.
+                                        boolean isOAuthProvider = !EmailAuthProvider.PROVIDER_ID.equals(providerId)
+                                                && !EMAIL_LINK_PROVIDER.equals(providerId)
+                                                && !PhoneAuthProvider.PROVIDER_ID.equals(providerId);
+
+                                        if (isOAuthProvider) {
+                                            if (getAuth().getCurrentUser() != null && getAuth().getCurrentUser().isAnonymous()) {
+                                                Log.d(TAG, "Providers empty; OAuth collision with same provider and current user is anonymous. Fallback to signInWithCredential.");
+                                                getAuth()
+                                                        .signInWithCredential(credential)
+                                                        .addOnSuccessListener(result -> handleSuccess(response, result))
+                                                        .addOnFailureListener(ex -> setResult(Resource.forFailure(ex)));
+                                                return;
+                                            } else if (getAuth().getCurrentUser() != null) {
+                                                Log.d(TAG, "Providers empty; OAuth collision with same provider and current user is NOT anonymous. Signing out and retrying signInWithCredential.");
+                                                getAuth().signOut();
+                                                getAuth()
+                                                        .signInWithCredential(credential)
+                                                        .addOnSuccessListener(result -> handleSuccess(response, result))
+                                                        .addOnFailureListener(ex -> setResult(Resource.forFailure(ex)));
+                                                return;
+                                            }
+                                        }
+
+                                        if (allowedProviders.contains(response.getProviderType())) {
+                                            Log.d(TAG,
+                                                    "Providers empty; using response provider "
+                                                            + response.getProviderType()
+                                                            + " for welcome-back flow");
+                                            startWelcomeBackFlowForLinking(
+                                                    response.getProviderType(), response);
+                                        } else {
+                                            setResult(Resource.forFailure(
+                                                    new FirebaseUiException(
+                                                            ErrorCodes.DEVELOPER_ERROR,
+                                                            "No supported providers.")));
+                                        }
                                     } else {
                                         // Case 2 & 3 - we need to link
                                         startWelcomeBackFlowForLinking(
@@ -184,6 +254,9 @@ public class SocialProviderResponseHandler extends SignInViewModelBase {
     private void handleGenericIdpLinkingFlow(@NonNull final IdpResponse idpResponse) {
         ProviderUtils.fetchSortedProviders(getAuth(), getArguments(), idpResponse.getEmail())
                 .addOnSuccessListener(providers -> {
+                    Log.d(TAG, "handleGenericIdpLinkingFlow. email=" + idpResponse.getEmail()
+                            + " allowed=" + getAllowedProviderIds()
+                            + " resolved=" + providers);
                     if (providers.isEmpty()) {
                         setResult(Resource.forFailure(
                                 new FirebaseUiException(ErrorCodes.DEVELOPER_ERROR,
@@ -193,6 +266,14 @@ public class SocialProviderResponseHandler extends SignInViewModelBase {
                     startWelcomeBackFlowForLinking(providers.get(0), idpResponse);
                 })
                 .addOnFailureListener(e -> setResult(Resource.forFailure(e)));
+    }
+
+    private List<String> getAllowedProviderIds() {
+        List<String> allowedProviders = new ArrayList<>();
+        for (AuthUI.IdpConfig config : getArguments().providers) {
+            allowedProviders.add(config.getProviderId());
+        }
+        return allowedProviders;
     }
 
     private boolean isEmailOrPhoneProvider(@NonNull String provider) {

@@ -45,7 +45,7 @@ object Config {
         }
 
         object Firebase {
-            const val bom = "com.google.firebase:firebase-bom:33.9.0"
+            const val bom = "com.google.firebase:firebase-bom:34.5.0"
             const val auth = "com.google.firebase:firebase-auth"
             const val database = "com.google.firebase:firebase-database"
             const val firestore = "com.google.firebase:firebase-firestore"
@@ -53,11 +53,11 @@ object Config {
         }
 
         object PlayServices {
-            const val auth = "com.google.android.gms:play-services-auth:21.3.0"
+            const val auth = "com.google.android.gms:play-services-auth:21.4.0"
         }
 
         object Provider {
-            const val facebook = "com.facebook.android:facebook-login:8.1.0"
+            const val facebook = "com.facebook.android:facebook-login:18.1.3"
         }
 
         object Misc {
