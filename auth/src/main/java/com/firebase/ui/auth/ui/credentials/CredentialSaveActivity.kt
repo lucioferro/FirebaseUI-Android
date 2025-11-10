@@ -72,7 +72,7 @@ class CredentialSaveActivity : InvisibleActivityBase() {
         fun createIntent(
             context: Context,
             flowParams: FlowParameters,
-            email: String,
+            email: String?,
             password: String?,
             response: IdpResponse
         ): Intent {
