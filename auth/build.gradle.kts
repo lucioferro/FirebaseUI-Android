@@ -88,7 +88,7 @@ dependencies {
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
     annotationProcessor(Config.Libs.Androidx.lifecycleCompiler)
 
-    implementation(platform(Config.Libs.Firebase.bom))
+    api(platform(Config.Libs.Firebase.bom))
     api(Config.Libs.Firebase.auth)
     api(Config.Libs.PlayServices.auth)
 

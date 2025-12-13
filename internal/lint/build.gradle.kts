@@ -8,6 +8,7 @@ dependencies {
 
     testImplementation(Config.Libs.Lint.api)
     testImplementation(Config.Libs.Lint.tests)
+    testImplementation(Config.Libs.Test.junit)
 }
 
 tasks.withType<Jar>().configureEach {

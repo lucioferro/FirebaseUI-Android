@@ -82,4 +82,11 @@ dependencies {
     implementation(Config.Libs.Androidx.lifecycleExtensions)
 }
 
-apply(plugin = "com.google.gms.google-services")
+val googleServicesJsonExists =
+    file("google-services.json").exists() ||
+        file("src/google-services.json").exists() ||
+        file("src/debug/google-services.json").exists()
+
+if (googleServicesJsonExists) {
+    apply(plugin = "com.google.gms.google-services")
+}
