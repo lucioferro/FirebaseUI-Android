@@ -1,10 +1,10 @@
 package com.firebase.uidemo.database.realtime;
 
-import com.firebase.uidemo.database.AbstractChat;
-import com.google.firebase.database.IgnoreExtraProperties;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import com.firebase.uidemo.database.AbstractChat;
+import com.google.firebase.database.IgnoreExtraProperties;
 
 @IgnoreExtraProperties
 public class Chat extends AbstractChat {

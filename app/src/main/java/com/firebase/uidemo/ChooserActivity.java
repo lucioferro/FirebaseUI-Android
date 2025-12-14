@@ -20,11 +20,16 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+
+import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
-import androidx.core.view.WindowInsetsControllerCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.auth.util.ExtraConstants;
@@ -36,12 +41,6 @@ import com.firebase.uidemo.database.realtime.FirebaseDbPagingActivity;
 import com.firebase.uidemo.database.realtime.RealtimeDbChatActivity;
 import com.firebase.uidemo.databinding.ActivityChooserBinding;
 import com.firebase.uidemo.storage.ImageActivity;
-
-import androidx.annotation.Nullable;
-import androidx.annotation.StringRes;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class ChooserActivity extends AppCompatActivity {
     private ActivityChooserBinding mBinding;

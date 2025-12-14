@@ -14,6 +14,7 @@
 package com.firebase.ui.auth.data.model;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.TextUtils;
@@ -154,6 +155,16 @@ public class FlowParameters implements Parcelable {
      * Extract FlowParameters from an Intent.
      */
     public static FlowParameters fromIntent(Intent intent) {
+        if (intent == null) {
+            return null;
+        }
+
+        intent.setExtrasClassLoader(AuthUI.class.getClassLoader());
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            return intent.getParcelableExtra(ExtraConstants.FLOW_PARAMS, FlowParameters.class);
+        }
+
         return intent.getParcelableExtra(ExtraConstants.FLOW_PARAMS);
     }
 

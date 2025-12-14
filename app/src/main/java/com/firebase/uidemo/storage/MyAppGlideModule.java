@@ -2,6 +2,8 @@ package com.firebase.uidemo.storage;
 
 import android.content.Context;
 
+import androidx.annotation.NonNull;
+
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.Registry;
 import com.bumptech.glide.annotation.GlideModule;
@@ -10,8 +12,6 @@ import com.firebase.ui.storage.images.FirebaseImageLoader;
 import com.google.firebase.storage.StorageReference;
 
 import java.io.InputStream;
-
-import androidx.annotation.NonNull;
 
 /**
  * Glide module to register {@link com.firebase.ui.storage.images.FirebaseImageLoader}.

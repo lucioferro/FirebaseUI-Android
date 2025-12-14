@@ -23,6 +23,7 @@ import android.view.WindowInsetsController;
 import android.view.WindowManager;
 
 import com.firebase.ui.auth.R;
+import com.firebase.ui.auth.data.model.FlowParameters;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -41,12 +42,19 @@ public abstract class AppCompatBase extends HelperActivityBase {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setTheme(R.style.FirebaseUI); // Provides default values
-        setTheme(getFlowParams().themeId);
+
+        FlowParameters params = getFlowParams();
+        if (params == null) {
+            finish(RESULT_CANCELED, null);
+            return;
+        }
+
+        setTheme(params.themeId);
 
         // Enable edge-to-edge
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         
-        if (getFlowParams().lockOrientation) {
+        if (params.lockOrientation) {
             lockOrientation();
         }
     }

@@ -10,11 +10,18 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.paging.LoadState;
+import androidx.paging.PagingConfig;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.firebase.ui.firestore.paging.FirestorePagingAdapter;
 import com.firebase.ui.firestore.paging.FirestorePagingOptions;
 import com.firebase.uidemo.R;
 import com.firebase.uidemo.databinding.ActivityFirestorePagingBinding;
-import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -22,18 +29,6 @@ import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.WriteBatch;
 
 import java.util.Locale;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.paging.CombinedLoadStates;
-import androidx.paging.LoadState;
-import androidx.paging.PagingConfig;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
-import kotlin.Unit;
-import kotlin.jvm.functions.Function1;
 
 public class FirestorePagingActivity extends AppCompatActivity {
 
