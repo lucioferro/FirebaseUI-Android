@@ -3,6 +3,7 @@ package com.firebase.ui.auth.ui;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.view.ContextThemeWrapper;
 import android.view.Gravity;
 import android.view.View;
@@ -10,6 +11,7 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import com.firebase.ui.auth.R;
+import com.firebase.ui.auth.data.model.FlowParameters;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 
 import androidx.annotation.Nullable;
@@ -20,6 +22,8 @@ import androidx.annotation.RestrictTo;
  */
 @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 public class InvisibleActivityBase extends HelperActivityBase {
+
+    private static final String TAG = "FUI-InvisibleActivityBase";
 
     // Minimum time that the spinner will stay on screen, once it is shown.
     private static final long MIN_SPINNER_MS = 750;
@@ -35,19 +39,62 @@ public class InvisibleActivityBase extends HelperActivityBase {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.fui_activity_invisible);
 
+        FlowParameters flowParams = getFlowParams();
+        if (flowParams == null) {
+            reportMissingFlowParams();
+            finish(RESULT_CANCELED, null);
+            return;
+        }
+
         // Create an indeterminate, circular progress bar in the app's theme
-        mProgressBar = new CircularProgressIndicator(new ContextThemeWrapper(this, getFlowParams().themeId));
+        mProgressBar = new CircularProgressIndicator(new ContextThemeWrapper(this, flowParams.themeId));
         mProgressBar.setIndeterminate(true);
         mProgressBar.setVisibility(View.GONE);
 
         // Set bar to float in the center
-        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        params.gravity = Gravity.CENTER;
+        layoutParams.gravity = Gravity.CENTER;
 
         // Add to the container
         FrameLayout container = findViewById(R.id.invisible_frame);
-        container.addView(mProgressBar, params);
+        container.addView(mProgressBar, layoutParams);
+    }
+
+    private void reportMissingFlowParams() {
+        try {
+            Intent intent = getIntent();
+            String action = intent != null ? intent.getAction() : null;
+            String data = null;
+            if (intent != null && intent.getData() != null) {
+                data = intent.getData().getScheme() + "://" + intent.getData().getHost() + intent.getData().getPath();
+            }
+
+            Log.e(TAG, "Missing FlowParameters. activity=" + getClass().getName()
+                    + " action=" + action + " data=" + data);
+
+            try {
+                Class<?> crashlyticsClass = Class.forName("com.google.firebase.crashlytics.FirebaseCrashlytics");
+                Object crashlytics = crashlyticsClass.getMethod("getInstance").invoke(null);
+                crashlyticsClass.getMethod("setCustomKey", String.class, String.class)
+                        .invoke(crashlytics, "firebaseui_flowparams_missing", "true");
+                crashlyticsClass.getMethod("setCustomKey", String.class, String.class)
+                        .invoke(crashlytics, "firebaseui_activity", getClass().getName());
+                crashlyticsClass.getMethod("setCustomKey", String.class, String.class)
+                        .invoke(crashlytics, "firebaseui_intent_action", action);
+                crashlyticsClass.getMethod("setCustomKey", String.class, String.class)
+                        .invoke(crashlytics, "firebaseui_intent_data", data);
+                crashlyticsClass.getMethod("log", String.class)
+                        .invoke(crashlytics, "FirebaseUI missing FlowParameters; cancelling flow");
+                crashlyticsClass.getMethod("recordException", Throwable.class)
+                        .invoke(crashlytics,
+                                new IllegalStateException("FirebaseUI missing FlowParameters in " + getClass().getName()));
+            } catch (Throwable tr) {
+                Log.e(TAG, "Crashlytics not available or failed to record non-fatal", tr);
+            }
+        } catch (Throwable tr) {
+            Log.e(TAG, "Failed to report missing FlowParameters", tr);
+        }
     }
 
     @Override
