@@ -34,8 +34,20 @@ public class KickoffActivity extends InvisibleActivityBase {
     @Override
     protected void onCreate(@Nullable final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (isFinishing()) {
+            mKickstarter = null;
+            return;
+        }
+
+        FlowParameters flowParams = getFlowParams();
+        if (flowParams == null) {
+            mKickstarter = null;
+            return;
+        }
+
         mKickstarter = new ViewModelProvider(this).get(SignInKickstarter.class);
-        mKickstarter.init(getFlowParams());
+        mKickstarter.init(flowParams);
         mKickstarter.getOperation().observe(this, new ResourceObserver<>(this) {
             @Override
             protected void onSuccess(@NonNull IdpResponse response) {
@@ -56,7 +68,7 @@ public class KickoffActivity extends InvisibleActivityBase {
             }
         });
 
-        Task<Void> checkPlayServicesTask = getFlowParams().isPlayServicesRequired()
+        Task<Void> checkPlayServicesTask = flowParams.isPlayServicesRequired()
                 ? GoogleApiAvailability.getInstance().makeGooglePlayServicesAvailable(this)
                 : Tasks.forResult((Void) null);
 
@@ -76,6 +88,10 @@ public class KickoffActivity extends InvisibleActivityBase {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
+        if (mKickstarter == null) {
+            return;
+        }
+
         if (requestCode == RequestCodes.EMAIL_FLOW
                 && (resultCode == RequestCodes.EMAIL_LINK_WRONG_DEVICE_FLOW
                 || resultCode == RequestCodes.EMAIL_LINK_INVALID_LINK_FLOW)) {
@@ -87,6 +103,9 @@ public class KickoffActivity extends InvisibleActivityBase {
 
     public void invalidateEmailLink() {
         FlowParameters flowParameters = getFlowParams();
+        if (flowParameters == null) {
+            return;
+        }
         flowParameters.emailLink = null;
         setIntent(getIntent().putExtra(ExtraConstants.FLOW_PARAMS,
                 flowParameters));

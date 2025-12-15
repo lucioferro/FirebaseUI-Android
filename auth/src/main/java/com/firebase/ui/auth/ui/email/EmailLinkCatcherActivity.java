@@ -38,16 +38,25 @@ public class EmailLinkCatcherActivity extends InvisibleActivityBase {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        initHandler();
+        if (isFinishing()) {
+            return;
+        }
 
-        if (getFlowParams().emailLink != null) {
+        FlowParameters flowParams = getFlowParams();
+        if (flowParams == null) {
+            return;
+        }
+
+        initHandler(flowParams);
+
+        if (flowParams.emailLink != null) {
             mHandler.startSignIn();
         }
     }
 
-    private void initHandler() {
+    private void initHandler(@NonNull FlowParameters flowParams) {
         mHandler = new ViewModelProvider(this).get(EmailLinkSignInHandler.class);
-        mHandler.init(getFlowParams());
+        mHandler.init(flowParams);
         mHandler.getOperation().observe(this, new ResourceObserver<IdpResponse>(this) {
             @Override
             protected void onSuccess(@NonNull IdpResponse response) {

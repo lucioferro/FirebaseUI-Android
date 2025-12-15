@@ -44,11 +44,21 @@ public class SingleSignInActivity extends InvisibleActivityBase {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (isFinishing()) {
+            return;
+        }
+
+        FlowParameters flowParams = getFlowParams();
+        if (flowParams == null) {
+            return;
+        }
+
         User user = User.getUser(getIntent());
         final String provider = user.getProviderId();
 
         AuthUI.IdpConfig providerConfig =
-                ProviderUtils.getConfigFromIdps(getFlowParams().providers, provider);
+                ProviderUtils.getConfigFromIdps(flowParams.providers, provider);
         if (providerConfig == null) {
             finish(RESULT_CANCELED, IdpResponse.getErrorIntent(new FirebaseUiException(
                     ErrorCodes.DEVELOPER_ERROR,
@@ -59,7 +69,7 @@ public class SingleSignInActivity extends InvisibleActivityBase {
         ViewModelProvider supplier = new ViewModelProvider(this);
 
         mHandler = supplier.get(SocialProviderResponseHandler.class);
-        mHandler.init(getFlowParams());
+        mHandler.init(flowParams);
 
         boolean useEmulator = getAuthUI().isUseEmulator();
 
