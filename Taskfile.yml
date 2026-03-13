@@ -1,0 +1,292 @@
+version: '3'
+
+# FirebaseUI-Android - Taskfile
+# Automação de tarefas comuns do projeto
+# Documentação: https://taskfile.dev/
+
+vars:
+  GRADLE: ./gradlew
+  GRADLE_OPTS: --console=plain --no-daemon
+  VERSION:
+    sh: grep "VERSION_NAME=" gradle.properties | cut -d'=' -f2
+
+tasks:
+  # ============================================================================
+  # Comandos de Build
+  # ============================================================================
+
+  build:
+    desc: "Compila todos os módulos do projeto (debug + release)"
+    cmds:
+      - "{{.GRADLE}} assemble {{.GRADLE_OPTS}}"
+
+  build:debug:
+    desc: "Compila todos os módulos em modo debug"
+    cmds:
+      - "{{.GRADLE}} assembleDebug {{.GRADLE_OPTS}}"
+
+  build:release:
+    desc: "Compila todos os módulos em modo release"
+    cmds:
+      - "{{.GRADLE}} assembleRelease {{.GRADLE_OPTS}}"
+
+  build:app:
+    desc: "Compila apenas o módulo app (demo)"
+    cmds:
+      - "{{.GRADLE}} :app:assemble {{.GRADLE_OPTS}}"
+
+  build:auth:
+    desc: "Compila apenas o módulo auth"
+    cmds:
+      - "{{.GRADLE}} :auth:assembleRelease {{.GRADLE_OPTS}}"
+
+  build:database:
+    desc: "Compila apenas o módulo database"
+    cmds:
+      - "{{.GRADLE}} :database:assembleRelease {{.GRADLE_OPTS}}"
+
+  build:firestore:
+    desc: "Compila apenas o módulo firestore"
+    cmds:
+      - "{{.GRADLE}} :firestore:assembleRelease {{.GRADLE_OPTS}}"
+
+  build:storage:
+    desc: "Compila apenas o módulo storage"
+    cmds:
+      - "{{.GRADLE}} :storage:assembleRelease {{.GRADLE_OPTS}}"
+
+  # ============================================================================
+  # Limpeza
+  # ============================================================================
+
+  clean:
+    desc: "Remove todos os arquivos de build"
+    cmds:
+      - "{{.GRADLE}} clean {{.GRADLE_OPTS}}"
+
+  clean:all:
+    desc: "Limpeza completa incluindo cache do Gradle"
+    cmds:
+      - "{{.GRADLE}} clean {{.GRADLE_OPTS}}"
+      - rm -rf .gradle
+      - rm -rf build
+      - rm -rf */build
+      - echo "✓ Limpeza completa realizada"
+
+  # ============================================================================
+  # Publicação Maven Local
+  # ============================================================================
+
+  publish:local:
+    desc: "Publica todas as bibliotecas no repositório Maven local (~/.m2/repository)"
+    summary: |
+      Compila e publica todas as bibliotecas FirebaseUI no Maven local.
+      Versão atual: {{.VERSION}}
+      
+      As bibliotecas publicadas serão:
+      - com.firebaseui:firebase-ui:{{.VERSION}}
+      - com.firebaseui:firebase-ui-auth:{{.VERSION}}
+      - com.firebaseui:firebase-ui-database:{{.VERSION}}
+      - com.firebaseui:firebase-ui-firestore:{{.VERSION}}
+      - com.firebaseui:firebase-ui-storage:{{.VERSION}}
+      - com.firebaseui:firebase-ui-common:{{.VERSION}}
+      
+      Para usar em outro projeto, adicione ao build.gradle.kts:
+      repositories {
+          mavenLocal()
+      }
+      dependencies {
+          implementation("com.firebaseui:firebase-ui-auth:{{.VERSION}}")
+      }
+    cmds:
+      - echo "📦 Publicando FirebaseUI {{.VERSION}} no Maven local..."
+      - "{{.GRADLE}} publishToMavenLocal {{.GRADLE_OPTS}}"
+      - echo "✓ Publicação concluída com sucesso!"
+      - echo "📍 Localização: ~/.m2/repository/com/firebaseui/"
+
+  publish:local:clean:
+    desc: "Limpa, recompila e publica no Maven local"
+    cmds:
+      - task: clean
+      - task: publish:local
+
+  publish:check:
+    desc: "Verifica as versões publicadas no Maven local"
+    cmds:
+      - echo "Versões do FirebaseUI no Maven local:"
+      - ls -la ~/.m2/repository/com/firebaseui/firebase-ui-auth/ 2>/dev/null || echo "Nenhuma versão encontrada"
+
+  # ============================================================================
+  # Testes
+  # ============================================================================
+
+  test:
+    desc: "Executa todos os testes unitários"
+    cmds:
+      - "{{.GRADLE}} test {{.GRADLE_OPTS}}"
+
+  test:unit:
+    desc: "Executa testes unitários (alias para test)"
+    cmds:
+      - task: test
+
+  test:auth:
+    desc: "Executa testes do módulo auth"
+    cmds:
+      - "{{.GRADLE}} :auth:test {{.GRADLE_OPTS}}"
+
+  test:database:
+    desc: "Executa testes do módulo database"
+    cmds:
+      - "{{.GRADLE}} :database:test {{.GRADLE_OPTS}}"
+
+  test:firestore:
+    desc: "Executa testes do módulo firestore"
+    cmds:
+      - "{{.GRADLE}} :firestore:test {{.GRADLE_OPTS}}"
+
+  test:connected:
+    desc: "Executa testes instrumentados (requer dispositivo/emulador conectado)"
+    cmds:
+      - "{{.GRADLE}} connectedAndroidTest {{.GRADLE_OPTS}}"
+
+  # ============================================================================
+  # Lint e Qualidade de Código
+  # ============================================================================
+
+  lint:
+    desc: "Executa análise estática de código (lint)"
+    cmds:
+      - "{{.GRADLE}} lint {{.GRADLE_OPTS}}"
+
+  lint:fix:
+    desc: "Aplica correções automáticas de lint"
+    cmds:
+      - "{{.GRADLE}} lintFix {{.GRADLE_OPTS}}"
+
+  format:
+    desc: "Formata o código Kotlin usando ktlint"
+    cmds:
+      - "{{.GRADLE}} ktlintFormat {{.GRADLE_OPTS}}"
+
+  check:
+    desc: "Executa todas as verificações (lint, tests, etc)"
+    cmds:
+      - "{{.GRADLE}} check {{.GRADLE_OPTS}}"
+
+  # ============================================================================
+  # Dependências
+  # ============================================================================
+
+  deps:
+    desc: "Lista todas as dependências do projeto"
+    cmds:
+      - "{{.GRADLE}} dependencies {{.GRADLE_OPTS}}"
+
+  deps:updates:
+    desc: "Verifica por atualizações de dependências"
+    cmds:
+      - "{{.GRADLE}} dependencyUpdates {{.GRADLE_OPTS}}"
+
+  # ============================================================================
+  # Informações e Diagnóstico
+  # ============================================================================
+
+  info:
+    desc: "Exibe informações sobre o projeto"
+    cmds:
+      - echo "════════════════════════════════════════════════════════"
+      - echo "📦 FirebaseUI-Android"
+      - echo "════════════════════════════════════════════════════════"
+      - echo "Versão atual: {{.VERSION}}"
+      - echo ""
+      - grep "compile = " buildSrc/src/main/kotlin/Config.kt | head -1
+      - grep "min = " buildSrc/src/main/kotlin/Config.kt | head -1
+      - echo ""
+      - echo "Gradle Wrapper:"
+      - grep "distributionUrl" gradle/wrapper/gradle-wrapper.properties
+      - echo ""
+      - echo "Módulos:"
+      - echo "  • auth - Autenticação Firebase"
+      - echo "  • database - Realtime Database"
+      - echo "  • firestore - Cloud Firestore"
+      - echo "  • storage - Cloud Storage"
+      - echo "  • common - Componentes comuns"
+      - echo "  • library - Biblioteca agregada"
+      - echo "════════════════════════════════════════════════════════"
+
+  version:
+    desc: "Exibe a versão atual do FirebaseUI"
+    cmds:
+      - echo "{{.VERSION}}"
+
+  gradle:version:
+    desc: "Exibe informações de versão do Gradle"
+    cmds:
+      - "{{.GRADLE}} --version"
+
+  # ============================================================================
+  # Desenvolvimento
+  # ============================================================================
+
+  dev:setup:
+    desc: "Configura o ambiente de desenvolvimento"
+    summary: |
+      Prepara o ambiente para desenvolvimento:
+      1. Limpa builds anteriores
+      2. Baixa dependências
+      3. Compila o projeto
+    cmds:
+      - echo "🔧 Configurando ambiente de desenvolvimento..."
+      - task: clean
+      - echo "📥 Baixando dependências..."
+      - "{{.GRADLE}} dependencies {{.GRADLE_OPTS}} > /dev/null"
+      - echo "🏗️  Compilando projeto..."
+      - task: build:debug
+      - echo "✓ Ambiente configurado com sucesso!"
+
+  dev:watch:
+    desc: "Compila o projeto automaticamente ao detectar mudanças"
+    cmds:
+      - "{{.GRADLE}} build --continuous {{.GRADLE_OPTS}}"
+
+  # ============================================================================
+  # Utilidades
+  # ============================================================================
+
+  help:
+    desc: "Exibe a lista de comandos disponíveis"
+    cmds:
+      - task --list
+
+  install:
+    desc: "Instala o app demo em um dispositivo conectado"
+    cmds:
+      - "{{.GRADLE}} :app:installDebug {{.GRADLE_OPTS}}"
+
+  uninstall:
+    desc: "Desinstala o app demo do dispositivo"
+    cmds:
+      - adb uninstall com.firebase.uidemo || true
+
+  logcat:
+    desc: "Exibe logs do app demo (requer app rodando no dispositivo)"
+    cmds:
+      - adb logcat -s FirebaseUI:V AndroidRuntime:E
+
+  # ============================================================================
+  # Tasks padrão
+  # ============================================================================
+
+  default:
+    desc: "Exibe informações do projeto e comandos úteis"
+    cmds:
+      - task: info
+      - echo ""
+      - echo "Comandos úteis:"
+      - echo "  task build            - Compila o projeto"
+      - echo "  task publish:local    - Publica no Maven local"
+      - echo "  task test             - Executa testes"
+      - echo "  task help             - Lista todos os comandos"
+      - echo ""
+      - echo "Para mais informações: task --list"
